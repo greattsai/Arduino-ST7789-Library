@@ -14,28 +14,28 @@ static const uint8_t PROGMEM
   cmd_240x240[] = {                 		// Initialization commands for 7789 screens
     10,                       				// 9 commands in list:
     ST7789_SWRESET,   ST_CMD_DELAY,  		// 1: Software reset, no args, w/delay
-      150,                     				// 150 ms delay
+      150,                     				//   150 ms delay
     ST7789_SLPOUT ,   ST_CMD_DELAY,  		// 2: Out of sleep mode, no args, w/delay
-      255,                    				// 255 = 500 ms delay
+      255,                    				//   255 = 500 ms delay
     ST7789_COLMOD , 1+ST_CMD_DELAY,  		// 3: Set color mode, 1 arg + delay:
-      0x55,                   				// 16-bit color
-      10,                     				// 10 ms delay
+      0x55,                   				//   16-bit color
+      10,                     				//   10 ms delay
     ST7789_MADCTL , 1,  					// 4: Memory access ctrl (directions), 1 arg:
-      0x00,                   				// Row addr/col addr, bottom to top refresh
+      0x00,                   				//   Row addr/col addr, bottom to top refresh
     ST7789_CASET  , 4,  					// 5: Column addr set, 4 args, no delay:
-      0x00, ST7789_240x240_XSTART,          // XSTART = 0
+      0x00, ST7789_240x240_XSTART,          //   XSTART = 0
 	  (240+ST7789_240x240_XSTART) >> 8,
-	  (240+ST7789_240x240_XSTART) & 0xFF,   // XEND = 240
+	  (240+ST7789_240x240_XSTART) & 0xFF,   //   XEND = 240
     ST7789_RASET  , 4,  					// 6: Row addr set, 4 args, no delay:
-      0x00, ST7789_240x240_YSTART,          // YSTART = 0
+      0x00, ST7789_240x240_YSTART,          //   YSTART = 0
       (240+ST7789_240x240_YSTART) >> 8,
-	  (240+ST7789_240x240_YSTART) & 0xFF,	// YEND = 240
-    ST7789_INVON ,   ST_CMD_DELAY,  		// 7: Inversion ON
+	  (240+ST7789_240x240_YSTART) & 0xFF,	//   YEND = 240
+    ST7789_INVON ,   ST_CMD_DELAY,  		// 7: Inversion ON(ST7789_INVON); Inversion OFF(ST7789_INVOFF) 
       10,
     ST7789_NORON  ,   ST_CMD_DELAY,  		// 8: Normal display on, no args, w/delay
-      10,                     				// 10 ms delay
+      10,                     				//   10 ms delay
     ST7789_DISPON ,   ST_CMD_DELAY,  		// 9: Main screen turn on, no args, w/delay
-    255 };                  				// 255 = 500 ms delay
+    255 };                  				//   255 = 500 ms delay
 
 inline uint16_t swapcolor(uint16_t x) { 
   return (x << 11) | (x & 0x07E0) | (x >> 11);
@@ -241,35 +241,57 @@ void Arduino_ST7789::commonInit(const uint8_t *cmdList) {
 
 void Arduino_ST7789::setRotation(uint8_t m) {
 
-  writecommand(ST7789_MADCTL);
-  rotation = m % 4; // can't be higher than 3
+  writecommand(ST7789_MADCTL);     // 0x36
+  rotation = m % 5; // can't be higher than 3
   switch (rotation) {
    case 0:
-     writedata(ST7789_MADCTL_MX | ST7789_MADCTL_MY | ST7789_MADCTL_RGB);
-
-     _xstart = _colstart;
-     _ystart = _rowstart;
+     writedata(ST7789_MADCTL_MX | ST7789_MADCTL_MY | ST7789_MADCTL_RGB);  // 0xC0
+     //_xstart = _colstart;
+     //_ystart = _rowstart;
+     //_xstart = 240;
+     //_ystart = 120;
+     _xstart = 0;
+     _ystart = 80;
      break;
    case 1:
-     writedata(ST7789_MADCTL_MY | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
-
-     _ystart = _colstart;
-     _xstart = _rowstart;
+     writedata(ST7789_MADCTL_MY | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);  // 0xA0
+     //_ystart = _colstart;
+     //_xstart = _rowstart;
+     //_xstart = _rowstart;
+     //_ystart = _colstart;
+     _xstart = 80;
+     _ystart = 0;
      break;
   case 2:
-     writedata(ST7789_MADCTL_RGB);
- 
-     _xstart = _colstart;
-     _ystart = _rowstart;
+     writedata(ST7789_MADCTL_RGB);  //0x00
+     //_xstart = _colstart;
+     //_ystart = _rowstart;
+     _xstart = 0 ;
+     _ystart = 0 ;
      break;
 
    case 3:
-     writedata(ST7789_MADCTL_MX | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
+     writedata(ST7789_MADCTL_MX | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);   // 0x60
 
-     _ystart = _colstart;
-     _xstart = _rowstart;
+     //_ystart = _colstart;
+     //_xstart = _rowstart;
+     _xstart = 0 ;
+     _ystart = 0 ;
+     break;
+   case 4:
+     writedata(ST7789_MADCTL_MY | ST7789_MADCTL_RGB);  // 0xC0
+     //_xstart = _colstart;
+     //_ystart = _rowstart;
+     //_xstart = 240;
+     //_ystart = 120;
+     _xstart = 0;
+     _ystart = 80;
      break;
   }
+  //startWrite（）;
+  //writecommand(ST7789_MADCTL);
+  //spiWrite（madctl）;
+  //endWrite（）;
 }
 
 void Arduino_ST7789::setAddrWindow(uint8_t x0, uint8_t y0, uint8_t x1,
@@ -457,5 +479,6 @@ void Arduino_ST7789::init(uint16_t width, uint16_t height) {
 
   displayInit(cmd_240x240);
 
-  setRotation(2);
+  //setRotation(2);   // Defualt is '2'
+  setRotation(4);
 }
